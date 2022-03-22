@@ -38,6 +38,15 @@ type Benchmarks () =
             1_000_000
         |]
 
+
+    // An array of different Arrays for each size in Size
+    let arrays =
+        sizeToCount
+        |> Array.map (fun count ->
+            [|1 .. count - 1|]
+            |> Array.map (fun i -> string i, ValueWrapper 0.0)
+            )
+
     // An array of different Maps for each size in Size
     let maps =
         sizeToCount
@@ -66,8 +75,7 @@ type Benchmarks () =
             )
 
 
-    [<Params(Size.``10``, Size.``100``, Size.``1_000``, Size.``10_000``,
-             Size.``100_000``, Size.``1_000_000``)>]
+    [<Params(Size.``10``)>]//, Size.``100``, Size.``1_000``, Size.``10_000``, Size.``100_000``, Size.``1_000_000``)>]
     member val Size = Size.``10`` with get, set
 
 
@@ -86,6 +94,20 @@ type Benchmarks () =
             map <- map.Add (key, newValue) // Do a minimal amount of work
 
         map
+
+    [<Benchmark>]
+    member b.Array () =
+        // We using mutation to ensure the compiler doesn't eliminate unnecessary work
+        let mutable array = arrays[int b.Size]
+        let keys = keysForSize[int b.Size]
+
+        for i = 0 to keys.Length - 1 do
+            let key = keys[i]
+            let index =  array |> Array.findIndex (fun (k,_) -> k = key)
+            let _, v = array.[index]
+            v.Value <- v.Value + 1.0
+        array
+
 
 
     [<Benchmark>]
